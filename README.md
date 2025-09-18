@@ -2,7 +2,11 @@
 
 Features:
 
-Lightweight
-Draggable
-Mutliple ways to do
-Skribblio works with this
+
+- Lightweight, Durable Script.
+
+- Blue, Draggable Menu.
+
+- Mutliple ways to do.
+
+- Skribblio works with this well for words.
