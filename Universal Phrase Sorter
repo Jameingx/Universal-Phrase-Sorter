@@ -1,0 +1,219 @@
+// ==UserScript==
+// @name         Universal Phrase Sorter (Word Length → First Letter, Trailing Commas)
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Sortable panel. Draggable panel. Blue gradient theme. Styled with Apex MkII font.
+// @author       You. JameingX.
+// @match        *://*/*
+// @grant        None.
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    function createUI() {
+        const fontLink = document.createElement("link");
+        fontLink.href = "https://fonts.googleapis.com/css2?family=Michroma&display=swap";
+        fontLink.rel = "stylesheet";
+        document.head.appendChild(fontLink);
+
+        const container = document.createElement("div");
+        Object.assign(container.style, {
+            position: "fixed",
+            top: "80px",
+            right: "20px",
+            zIndex: "99999",
+            background: "linear-gradient(135deg, #a0d8ff, #0a1f4d)", // Light blue to dark blue
+            padding: "16px",
+            borderRadius: "14px",
+            color: "#f1f1f1",
+            width: "420px",
+            fontFamily: "'Michroma', sans-serif",
+            boxShadow: "0 6px 16px rgba(0,0,0,0.6)",
+            border: "1px solid #00aaff",
+            cursor: "default"
+        });
+
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        const title = document.createElement("h3");
+        title.textContent = "⚡ Phrase Sorter";
+        Object.assign(title.style, {
+            margin: "0 0 12px 0",
+            fontSize: "18px",
+            textAlign: "center",
+            color: "#00cfff",
+            letterSpacing: "1px",
+            cursor: "move",
+            userSelect: "none"
+        });
+
+        // Drag
+        title.addEventListener("mousedown", e => {
+            isDragging = true;
+            offsetX = e.clientX - container.offsetLeft;
+            offsetY = e.clientY - container.offsetTop;
+            document.body.style.userSelect = "none";
+        });
+
+        document.addEventListener("mousemove", e => {
+            if (!isDragging) return;
+            container.style.left = e.clientX - offsetX + "px";
+            container.style.top = e.clientY - offsetY + "px";
+        });
+
+        document.addEventListener("mouseup", () => {
+            isDragging = false;
+            document.body.style.userSelect = "auto";
+        });
+
+        const inputBox = document.createElement("textarea");
+        inputBox.placeholder = "Paste phrases (comma or line-separated)...";
+        Object.assign(inputBox.style, {
+            width: "100%",
+            height: "90px",
+            marginBottom: "12px",
+            padding: "10px",
+            border: "1px solid #0077cc",
+            borderRadius: "8px",
+            background: "#cce6ff",
+            color: "#003366",
+            resize: "vertical",
+            fontSize: "13px",
+            fontFamily: "'Michroma', sans-serif"
+        });
+
+        const sortButton = document.createElement("button");
+        sortButton.textContent = "🚀 Sort Phrases (Word Length → Letters)";
+        Object.assign(sortButton.style, {
+            width: "100%",
+            padding: "10px",
+            marginBottom: "12px",
+            cursor: "pointer",
+            border: "none",
+            borderRadius: "8px",
+            background: "linear-gradient(90deg, #66ccff, #0066cc)", // Blue gradient
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "14px",
+            fontFamily: "'Michroma', sans-serif",
+            letterSpacing: "1px",
+            transition: "0.2s"
+        });
+        sortButton.addEventListener("mouseover", () => {
+            sortButton.style.transform = "scale(1.03)";
+            sortButton.style.opacity = "0.9";
+        });
+        sortButton.addEventListener("mouseout", () => {
+            sortButton.style.transform = "scale(1)";
+            sortButton.style.opacity = "1";
+        });
+
+        const outputBox = document.createElement("textarea");
+        outputBox.placeholder = "Sorted phrases will appear here (with word lengths, trailing commas)...";
+        Object.assign(outputBox.style, {
+            width: "100%",
+            height: "120px",
+            padding: "10px",
+            border: "1px solid #0077cc",
+            borderRadius: "8px",
+            background: "#cce6ff",
+            color: "#003366",
+            resize: "vertical",
+            fontSize: "13px",
+            fontFamily: "'Michroma', sans-serif",
+            marginBottom: "12px"
+        });
+
+        const toggleBox = document.createElement("textarea");
+        toggleBox.placeholder = "Paste list here to convert between single-line and line-separated...";
+        Object.assign(toggleBox.style, {
+            width: "100%",
+            height: "100px",
+            padding: "10px",
+            border: "1px solid #0077cc",
+            borderRadius: "8px",
+            background: "#cce6ff",
+            color: "#003366",
+            resize: "vertical",
+            fontSize: "13px",
+            fontFamily: "'Michroma', sans-serif",
+            marginBottom: "8px"
+        });
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.textContent = "🔀 Toggle Line/Comma List";
+        Object.assign(toggleBtn.style, {
+            width: "100%",
+            padding: "8px",
+            marginBottom: "12px",
+            cursor: "pointer",
+            border: "none",
+            borderRadius: "8px",
+            background: "linear-gradient(90deg, #000000, #0066ff)", // Black to blue gradient
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "13px",
+            fontFamily: "'Michroma', sans-serif",
+            letterSpacing: "1px"
+        });
+
+        // Toggle conversion
+        toggleBtn.addEventListener("click", () => {
+            const txt = toggleBox.value.trim();
+            if (!txt) return;
+            if (txt.includes("\n")) {
+                toggleBox.value = txt.split("\n").map(x => x.trim()).filter(x => x).join(" ");
+            } else {
+                toggleBox.value = txt.split(/\s*,\s*/).map(x => x.trim()).filter(x => x).map(x => x + ",").join("\n");
+            }
+        });
+
+        // Sorting function
+        sortButton.addEventListener("click", () => {
+            let phrases = inputBox.value.split(/[\n,]+/)
+                .map(l => l.trim())
+                .filter(l => l.length > 0);
+
+            phrases.sort((a, b) => {
+                const aWords = a.split(/\s+/);
+                const bWords = b.split(/\s+/);
+                const maxLen = Math.max(aWords.length, bWords.length);
+
+                for (let i = 0; i < maxLen; i++) {
+                    if (!aWords[i]) return -1;
+                    if (!bWords[i]) return 1;
+
+                    const aLen = aWords[i].length;
+                    const bLen = bWords[i].length;
+
+                    if (aLen !== bLen) return aLen - bLen;
+                }
+
+                for (let i = 0; i < maxLen; i++) {
+                    const aChar = aWords[i][0].toLowerCase();
+                    const bChar = bWords[i][0].toLowerCase();
+                    if (aChar !== bChar) return aChar.localeCompare(bChar);
+                }
+
+                return 0;
+            });
+
+            outputBox.value = phrases.map(p => {
+                const lengths = p.split(/\s+/).map(w => w.length).join(" ");
+                return `${p}, ${lengths},`;
+            }).join("\n");
+        });
+
+        container.appendChild(title);
+        container.appendChild(inputBox);
+        container.appendChild(sortButton);
+        container.appendChild(outputBox);
+        container.appendChild(toggleBox);
+        container.appendChild(toggleBtn);
+        document.body.appendChild(container);
+    }
+
+    window.addEventListener("load", () => setTimeout(createUI, 1500));
+})();
